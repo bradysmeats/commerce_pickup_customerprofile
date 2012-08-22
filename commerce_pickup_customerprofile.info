@@ -1,0 +1,8 @@
+name        = Pickup customer profile type
+description = A module to define a customer profile type for pickup orders.
+core        = 7.x
+
+dependencies[] = commerce_customer
+dependencies[] = phone
+
+package = "Commerce (contrib)"

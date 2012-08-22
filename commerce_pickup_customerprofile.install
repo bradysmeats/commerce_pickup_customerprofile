@@ -1,0 +1,15 @@
+<?php
+/**
+ * @file
+ * Install the Pickup customer profile type.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function commerce_pickup_customerprofile_enable() {
+  // Self-configure each profile type defined by this module.
+  foreach (commerce_pickup_customerprofile_commerce_customer_profile_type_info() as $profile_type) {
+    commerce_pickup_customerprofile_configure_customer_profile_type($profile_type);
+  }
+}

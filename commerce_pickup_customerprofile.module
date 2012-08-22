@@ -1,0 +1,99 @@
+<?php
+/**
+ * @file
+ * Define a customer profile type for pickup orders.
+ */
+
+/**
+ * Implements hook_commerce_customer_profile_type_info().
+ */
+function commerce_pickup_customerprofile_commerce_customer_profile_type_info() {
+  $profile_types = array();
+
+  $profile_types['pickup'] = array(
+    'type' => 'pickup',
+    'name' => t('Pickup information'),
+    'description' => t('The profile used to collect pickup information on the checkout and order forms.'),
+    'help' => '',
+    'addressfield' => TRUE,
+  );
+
+  return $profile_types;
+}
+
+/**
+ * Implements hook_configure_entity_type().
+ */
+function commerce_pickup_customerprofile_configure_customer_profile_type($profile_type) {
+  if ($profile_type['type'] == 'pickup') {
+    // If a field type we know should exist isn't found, clear the Field cache.
+    if (!field_info_field_types('phone')) {
+      field_cache_clear();
+    }
+
+    // Look for or add an phone number field to the customer profile type.
+    $phone_field_name = 'commerce_customer_phone';
+    $phone_field = field_info_field($phone_field_name);
+    $phone_instance = field_info_instance('commerce_customer_profile', $phone_field_name, $profile_type['type']);
+
+    if (empty($phone_field)) {
+      $phone_field = array(
+        'field_name' => $phone_field_name,
+        'type' => 'phone',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+        'entity_types' => array('commerce_customer_profile'),
+        'translatable' => FALSE,
+      );
+
+      $phone_field = field_create_field($phone_field);
+    }
+
+    if (empty($phone_instance)) {
+      $phone_instance = array(
+        'field_name' => $phone_field_name,
+        'entity_type' => 'commerce_customer_profile',
+        'bundle' => $profile_type['type'],
+        'label' => t('Phone number'),
+        'required' => TRUE,
+        'settings' => array(
+          'phone_country_code' => TRUE,
+          'country' => 'ca',
+          'ca_phone_separator' => '-',
+          'ca_phone_parentheses' => FALSE,
+        ),
+        'widget' => array(
+          'type' => 'phone_textfield',
+          'weight' => -9,
+        ),
+        'display' => array(),
+      );
+
+      // Set the default display formatters for various view modes.
+      foreach (array('default', 'customer', 'administrator') as $view_mode) {
+        $phone_instance['display'][$view_mode] = array(
+          'label' => 'hidden',
+          'type' => 'phone',
+          'weight' => -10,
+        );
+      }
+
+      field_create_instance($phone_instance);
+    }
+
+    // Configure the default address instance.
+    $address_field_name = 'commerce_customer_address';
+    $address_field = field_info_field($address_field_name);
+    $address_instance = field_info_instance('commerce_customer_profile', $address_field_name, $profile_type['type']);
+
+    // Override default instance settings.
+    $address_instance['required'] = TRUE;
+    $address_instance['widget']['weight'] = -10;
+    $address_instance['widget']['settings']['format_handlers'] = array('name-oneline');
+    foreach ($address_instance['display'] as $build_mode_id => $build_mode_settings) {
+      $address_instance['display'][$build_mode_id]['label'] = 'hidden';
+    }
+
+    // Save changes.
+    field_update_instance($address_instance);
+  }
+}
